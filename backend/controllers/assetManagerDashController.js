@@ -2,6 +2,8 @@ import Asset from "../models/assetModel.js";
 
 export const getAssetDashboard = async (req, res) => {
   try {
+    console.log(req.user);
+
     const totalAssets = await Asset.countDocuments();
 
     const statusData = await Asset.aggregate([

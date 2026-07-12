@@ -7,6 +7,11 @@ import { getAssetDashboard } from "../controllers/assetManagerDashController.js"
 
 const router = express.Router();
 
-router.get("/assets-manager-dash", isAuth, isAssetManager, getAssetDashboard);
+router.get(
+  "/assets-manager-dash",
+  isAuth,
+  //  isAssetManager,
+  getAssetDashboard,
+);
 
 export default router;

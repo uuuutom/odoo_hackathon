@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { getAssetsManagerDashboard } from "../api/assetManagerDashboardAPI";
+import { getAssetsManagerDashboard } from "../services/assetManagerDashboardapi.js";
 import {
   PieChart,
   Pie,
@@ -40,6 +40,20 @@ import {
 
 export default function AssetManagerDashboard() {
   const [dashboardData, setDashboardData] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  <button
+    onClick={() => setShowNotifications((prev) => !prev)}
+    className="relative"
+  >
+    <Bell size={20} />
+  </button>;
+
+  useEffect(() => {
+    if (dashboardData) {
+      console.log(dashboardData);
+    }
+  }, [dashboardData]);
 
   const statusData =
     dashboardData?.statusData?.map((item) => ({
@@ -81,6 +95,14 @@ export default function AssetManagerDashboard() {
       boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.08)",
       transition: { type: "spring", stiffness: 300, damping: 20 },
     },
+  };
+
+  const STATUS_COLORS = {
+    Available: "#22c55e",
+    Allocated: "#3b82f6",
+    Maintenance: "#ef4444",
+    Lost: "#f59e0b",
+    Retired: "#64748b",
   };
 
   const getzletters = (name) => {
@@ -204,17 +226,32 @@ export default function AssetManagerDashboard() {
               </span>
             </div>
             <div className="flex items-center space-x-3 cursor-pointer pl-4 border-l border-slate-200">
-              <div className="w-9 h-9 rounded-full bg-emerald-100 overflow-hidden border border-slate-200">
-                <img
-                  src="https://api.dicebear.com/7.x/avataaars/svg?seed=Amit"
-                  alt="Amit Kumar"
-                />
+              <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 bg-emerald-100 flex items-center justify-center">
+                {dashboardData?.manager?.avatar ? (
+                  <img
+                    src={dashboardData.manager.avatar}
+                    alt={dashboardData.manager.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-sm font-bold text-emerald-700">
+                    {getzletters(dashboardData?.manager?.name)}
+                  </span>
+                )}
               </div>
-              <div className="text-sm">
-                <p className="font-semibold text-slate-800 leading-tight">
-                  Amit Kumar
+
+              <div className="leading-tight">
+                <p className="text-sm font-semibold text-slate-800">
+                  {dashboardData?.manager?.name || "Asset Manager"}
                 </p>
-                <p className="text-[11px] text-slate-500">Asset Manager</p>
+
+                <p className="text-xs text-slate-500">
+                  {dashboardData?.manager?.email || "-"}
+                </p>
+
+                <p className="text-[11px] font-medium text-emerald-600 capitalize">
+                  {dashboardData?.manager?.role || "-"}
+                </p>
               </div>
             </div>
           </div>
@@ -384,8 +421,9 @@ export default function AssetManagerDashboard() {
                   {/* Center Text */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <span className="text-xl font-bold text-slate-800">
-                      1,248
+                      {dashboardData?.totalAssets || 0}
                     </span>
+
                     <span className="text-[9px] font-semibold text-slate-500">
                       Total Assets
                     </span>
@@ -403,7 +441,14 @@ export default function AssetManagerDashboard() {
                         {item.name}
                       </div>
                       <span className="text-[10px] text-slate-400 ml-4.5">
-                        {item.value} ({((item.value / 1248) * 100).toFixed(1)}%)
+                        {item.value} (
+                        {dashboardData?.totalAssets
+                          ? (
+                              (item.value / dashboardData.totalAssets) *
+                              100
+                            ).toFixed(1)
+                          : 0}
+                        %)
                       </span>
                     </div>
                   ))}
@@ -433,53 +478,64 @@ export default function AssetManagerDashboard() {
                 </div>
               </div>
               <div className="flex-1 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={trendData}
-                    margin={{ top: 5, right: 10, left: -25, bottom: 0 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#f1f5f9"
-                    />
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 11, fill: "#94a3b8" }}
-                      dy={10}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 11, fill: "#94a3b8" }}
-                    />
-                    <RechartsTooltip
-                      contentStyle={{
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                      }}
-                    />
-                    <Line
-                      type="linear"
-                      dataKey="Allocated"
-                      stroke="#22c55e"
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: "#22c55e" }}
-                      activeDot={{ r: 5 }}
-                    />
-                    <Line
-                      type="linear"
-                      dataKey="Returned"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      dot={{ r: 3, fill: "#3b82f6" }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {trendData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={trendData}
+                      margin={{ top: 5, right: 10, left: -25, bottom: 0 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f1f5f9"
+                      />
+
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: "#94a3b8" }}
+                        dy={10}
+                      />
+
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      />
+
+                      <RechartsTooltip
+                        contentStyle={{
+                          borderRadius: "8px",
+                          border: "none",
+                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        }}
+                      />
+
+                      <Line
+                        type="linear"
+                        dataKey="Allocated"
+                        stroke="#22c55e"
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: "#22c55e" }}
+                        activeDot={{ r: 5 }}
+                      />
+
+                      <Line
+                        type="linear"
+                        dataKey="Returned"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        dot={{ r: 3, fill: "#3b82f6" }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-slate-400">
+                    No monthly allocation data
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -554,55 +610,61 @@ export default function AssetManagerDashboard() {
                 Recent Requests
               </h3>
               <div className="flex-1 space-y-4">
-                {recentRequests.map((req, i) => (
-                  <div
-                    key={req._id || i}
-                    className="flex items-center justify-between group cursor-pointer border-b border-slate-50 pb-3 last:border-0"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className={`p-2 rounded-lg ${
-                          req.requestType === "Maintenance"
-                            ? "text-red-500 bg-red-50"
-                            : req.requestType === "Return"
-                              ? "text-blue-500 bg-blue-50"
-                              : "text-emerald-500 bg-emerald-50"
+                {recentRequests.length > 0 ? (
+                  recentRequests.map((req, i) => (
+                    <div
+                      key={req._id || i}
+                      className="flex items-center justify-between group cursor-pointer border-b border-slate-50 pb-3 last:border-0"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`p-2 rounded-lg ${
+                            req.requestType === "Maintenance"
+                              ? "text-red-500 bg-red-50"
+                              : req.requestType === "Return"
+                                ? "text-blue-500 bg-blue-50"
+                                : "text-emerald-500 bg-emerald-50"
+                          }`}
+                        >
+                          {req.requestType === "Maintenance" ? (
+                            <Wrench size={14} />
+                          ) : req.requestType === "Return" ? (
+                            <ArrowRightLeft size={14} />
+                          ) : (
+                            <RefreshCcw size={14} />
+                          )}
+                        </div>
+
+                        <div>
+                          <p className="text-[12px] font-semibold text-slate-700 group-hover:text-emerald-600 transition-colors line-clamp-1">
+                            {req.requestType} request for{" "}
+                            {req.asset?.assetName || "Asset"}
+                          </p>
+
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {req.requestedBy?.name || "User"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <span
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded whitespace-nowrap ml-2 ${
+                          req.status === "Pending"
+                            ? "text-orange-600 bg-orange-50"
+                            : req.status === "Approved"
+                              ? "text-emerald-600 bg-emerald-50"
+                              : "text-red-600 bg-red-50"
                         }`}
                       >
-                        {req.requestType === "Maintenance" ? (
-                          <Wrench size={14} />
-                        ) : req.requestType === "Return" ? (
-                          <ArrowRightLeft size={14} />
-                        ) : (
-                          <RefreshCcw size={14} />
-                        )}
-                      </div>
-
-                      <div>
-                        <p className="text-[12px] font-semibold text-slate-700 group-hover:text-emerald-600 transition-colors line-clamp-1">
-                          {req.requestType} request for{" "}
-                          {req.asset?.assetName || "Asset"}
-                        </p>
-
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          {req.requestedBy?.name || "User"}
-                        </p>
-                      </div>
+                        {req.status}
+                      </span>
                     </div>
-
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded whitespace-nowrap ml-2 ${
-                        req.status === "Pending"
-                          ? "text-orange-600 bg-orange-50"
-                          : req.status === "Approved"
-                            ? "text-emerald-600 bg-emerald-50"
-                            : "text-red-600 bg-red-50"
-                      }`}
-                    >
-                      {req.status}
-                    </span>
+                  ))
+                ) : (
+                  <div className="flex h-full items-center justify-center text-slate-400">
+                    No recent requests found
                   </div>
-                ))}
+                )}
               </div>
               <button className="text-xs text-blue-600 font-semibold mt-4 hover:underline text-left">
                 View all requests
@@ -619,40 +681,46 @@ export default function AssetManagerDashboard() {
                 Upcoming Returns
               </h3>
               <div className="flex-1 space-y-4">
-                {upcomingReturns.map((ret, i) => (
-                  <div
-                    key={ret._id || i}
-                    className="flex items-center space-x-4 group cursor-pointer border-b border-slate-50 pb-3 last:border-0"
-                  >
-                    <div className="text-center min-w-[35px]">
-                      <p className="text-sm font-bold text-slate-800">
-                        {new Date(ret.returnDate).getDate()}
-                      </p>
+                {upcomingReturns.length > 0 ? (
+                  upcomingReturns.map((ret, i) => (
+                    <div
+                      key={ret._id || i}
+                      className="flex items-center space-x-4 group cursor-pointer border-b border-slate-50 pb-3 last:border-0"
+                    >
+                      <div className="text-center min-w-[35px]">
+                        <p className="text-sm font-bold text-slate-800">
+                          {new Date(ret.returnDate).getDate()}
+                        </p>
 
-                      <p className="text-[10px] font-medium text-slate-500">
-                        {new Date(ret.returnDate).toLocaleString("en-US", {
-                          month: "short",
-                        })}
-                      </p>
+                        <p className="text-[10px] font-medium text-slate-500">
+                          {new Date(ret.returnDate).toLocaleString("en-US", {
+                            month: "short",
+                          })}
+                        </p>
+                      </div>
+
+                      <div className="w-[1.5px] h-8 bg-slate-200"></div>
+
+                      <div className="flex-1">
+                        <p className="text-[12px] font-semibold text-slate-700 group-hover:text-emerald-600">
+                          {ret.asset?.assetName || "Unknown Asset"}
+                        </p>
+
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          {ret.employee?.name || "Unknown Employee"}
+                        </p>
+                      </div>
+
+                      <div className="p-1.5 rounded-full bg-emerald-50 text-emerald-500">
+                        <Monitor size={12} />
+                      </div>
                     </div>
-
-                    <div className="w-[1.5px] h-8 bg-slate-200"></div>
-
-                    <div className="flex-1">
-                      <p className="text-[12px] font-semibold text-slate-700 group-hover:text-emerald-600">
-                        {ret.asset?.assetName}
-                      </p>
-
-                      <p className="text-[10px] text-slate-500 mt-0.5">
-                        {ret.employee?.name}
-                      </p>
-                    </div>
-
-                    <div className="p-1.5 rounded-full bg-emerald-50 text-emerald-500">
-                      <Monitor size={12} />
-                    </div>
+                  ))
+                ) : (
+                  <div className="flex h-full items-center justify-center text-slate-400">
+                    No upcoming returns
                   </div>
-                ))}
+                )}
               </div>
               <button className="text-xs text-blue-600 font-semibold mt-4 hover:underline text-left">
                 View all
@@ -669,51 +737,66 @@ export default function AssetManagerDashboard() {
                 Maintenance Summary
               </h3>
               <div className="flex-1 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={maintenanceData}
-                    margin={{ top: 20, right: 10, left: -25, bottom: 0 }}
-                    barSize={35}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#f1f5f9"
-                    />
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 11, fill: "#64748b", fontWeight: 500 }}
-                      dy={10}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 11, fill: "#94a3b8" }}
-                    />
-                    <RechartsTooltip
-                      cursor={{ fill: "transparent" }}
-                      contentStyle={{
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                      }}
-                    />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                      {maintenanceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                      <LabelList
-                        dataKey="count"
-                        position="top"
-                        fill="#475569"
-                        fontSize={12}
-                        fontWeight={700}
+                {maintenanceData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={maintenanceData}
+                      margin={{ top: 20, right: 10, left: -25, bottom: 0 }}
+                      barSize={35}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="#f1f5f9"
                       />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{
+                          fontSize: 11,
+                          fill: "#64748b",
+                          fontWeight: 500,
+                        }}
+                        dy={10}
+                      />
+
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      />
+
+                      <RechartsTooltip
+                        cursor={{ fill: "transparent" }}
+                        contentStyle={{
+                          borderRadius: "8px",
+                          border: "none",
+                          boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        }}
+                      />
+
+                      <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                        {maintenanceData.map((entry, index) => (
+                          <Cell key={index} fill={entry.color} />
+                        ))}
+
+                        <LabelList
+                          dataKey="count"
+                          position="top"
+                          fill="#475569"
+                          fontSize={12}
+                          fontWeight={700}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-slate-400">
+                    No maintenance data available
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
