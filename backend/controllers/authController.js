@@ -160,6 +160,93 @@ export const signup = async (req, res) => {
   }
 };
 
+// export const login = async (req, res) => {
+//   console.log("========== LOGIN API ==========");
+
+//   try {
+//     // Validate Request
+//     const { error } = loginSchema.validate(req.body);
+
+//     if (error) {
+//       return res.status(400).json({
+//         success: false,
+//         message: error.details[0].message,
+//       });
+//     }
+
+//     const { email, password } = req.body;
+
+//     // Find User
+//     const user = await User.findOne({
+//       email: email.toLowerCase(),
+//     });
+
+//     if (!user) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Invalid email or password",
+//       });
+//     }
+
+//     // Check Provider
+//     if (user.provider !== "email") {
+//       return res.status(400).json({
+//         success: false,
+//         message: `This account uses ${user.provider} login. Please continue with ${user.provider}.`,
+//       });
+//     }
+
+//     // Check Password Exists
+//     if (!user.password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Password login is not available for this account.",
+//       });
+//     }
+
+//     // Compare Password
+//     const isMatch = await bcrypt.compare(password, user.password);
+
+//     if (!isMatch) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Invalid email or password",
+//       });
+//     }
+
+//     // Check Account Status
+//     if (!user.isActive) {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Your account has been disabled.",
+//       });
+//     }
+
+//     // Generate OTP
+//     const otp = await createOTP(email);
+
+//     // Send OTP Email
+//     await sendOTPEmail(email, otp);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP sent successfully",
+//       email,
+//     });
+//   } catch (error) {
+//     console.log("Login Error:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+//===========================================
+//     github auth
+//===========================================
+
 export const login = async (req, res) => {
   console.log("========== LOGIN API ==========");
 
@@ -188,7 +275,7 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check Provider
+    // Check Login Provider
     if (user.provider !== "email") {
       return res.status(400).json({
         success: false,
@@ -204,6 +291,28 @@ export const login = async (req, res) => {
       });
     }
 
+    // Check Account Status
+    if (user.status === "SUSPENDED") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been suspended.",
+      });
+    }
+
+    if (user.status === "INACTIVE") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is inactive.",
+      });
+    }
+
+    if (user.status !== "ACTIVE") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been disabled.",
+      });
+    }
+
     // Compare Password
     const isMatch = await bcrypt.compare(password, user.password);
 
@@ -214,39 +323,26 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check Account Status
-    if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: "Your account has been disabled.",
-      });
-    }
-
     // Generate OTP
     const otp = await createOTP(email);
 
-    // Send OTP Email
+    // Send OTP
     await sendOTPEmail(email, otp);
 
     return res.status(200).json({
       success: true,
-      message: "OTP sent successfully",
+      message: "OTP sent successfully.",
       email,
     });
   } catch (error) {
-    console.log("Login Error:", error);
+    console.error("Login Error:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Internal Server Error",
     });
   }
 };
-
-//===========================================
-//     github auth
-//===========================================
-
 export const githubAuth = async (req, res) => {
   try {
     const { name, email, photoURL, githubId } = req.body;
@@ -362,6 +458,65 @@ export const resendSignupOTP = async (req, res) => {
   }
 };
 
+// export const resendLoginOTP = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+
+//     if (!email) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email is required",
+//       });
+//     }
+
+//     const user = await User.findOne({
+//       email: email.toLowerCase(),
+//     });
+
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "User not found",
+//       });
+//     }
+//     if (user.status !== "ACTIVE") {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Your account has been disabled.",
+//       });
+//     }
+
+//     if (user.status === "SUSPENDED") {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Your account has been suspended.",
+//       });
+//     }
+
+//     if (user.status === "INACTIVE") {
+//       return res.status(403).json({
+//         success: false,
+//         message: "Your account is inactive.",
+//       });
+//     }
+//     const otp = await createOTP(email);
+
+//     await sendOTPEmail(email, otp);
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "OTP resent successfully",
+//     });
+//   } catch (error) {
+//     console.error("Resend Login OTP Error:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Internal Server Error",
+//     });
+//   }
+// };
+
 export const resendLoginOTP = async (req, res) => {
   try {
     const { email } = req.body;
@@ -384,20 +539,38 @@ export const resendLoginOTP = async (req, res) => {
       });
     }
 
-    if (!user.isActive) {
+    // Check account status
+    if (user.status === "SUSPENDED") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been suspended.",
+      });
+    }
+
+    if (user.status === "INACTIVE") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account is inactive.",
+      });
+    }
+
+    // Safety check (for any unexpected status)
+    if (user.status !== "ACTIVE") {
       return res.status(403).json({
         success: false,
         message: "Your account has been disabled.",
       });
     }
 
+    // Generate OTP
     const otp = await createOTP(email);
 
+    // Send OTP
     await sendOTPEmail(email, otp);
 
     return res.status(200).json({
       success: true,
-      message: "OTP resent successfully",
+      message: "OTP resent successfully.",
     });
   } catch (error) {
     console.error("Resend Login OTP Error:", error);
@@ -408,7 +581,6 @@ export const resendLoginOTP = async (req, res) => {
     });
   }
 };
-
 export const verifyLoginOTP = async (req, res) => {
   try {
     const { email, otp } = req.body;

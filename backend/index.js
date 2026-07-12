@@ -6,11 +6,15 @@ import { connectDB } from "./config/connectDB.js";
 import errorHandler from "./middlewares/errorHandling.js";
 import path from "path";
 import cookieParser from "cookie-parser";
+import assetRoutes from "./routes/assetRoute.js";
+import dashboardRoute from "./routes/dashboardRoute.js";
+import assetManagerDashboardRoutes from "./routes/assetManagerDashRoute.js";
 
 //routes
 import authRoutes from "./routes/authRoute.js";
 import userRoutes from "./routes/userRoute.js";
 import adminRoutes from "./routes/adminRoute.js";
+import profileRoute from "./routes/profileRoute.js";
 
 // Fix MongoDB Atlas DNS issue (optional)
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
@@ -55,6 +59,10 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/assets", assetRoutes);
+app.use("/api/dashboard", dashboardRoute);
+app.use("/api/user", profileRoute);
+app.use("/api/asset-manager", assetManagerDashboardRoutes);
 
 // ==========================================
 // 404 Handler

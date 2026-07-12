@@ -20,7 +20,7 @@ await mongoose.connect(process.env.MONGODB_URL);
 const users = [
   {
     name: "Super Admin",
-    email: "admin@test.com",
+    email: "teni21105@gmail.com",
     role: "ADMIN",
     emailVerified: true,
     status: "ACTIVE",
@@ -28,7 +28,7 @@ const users = [
 
   {
     name: "Asset Manager",
-    email: "assetmanager@test.com",
+    email: "utom8088@gmail.com",
     role: "ASSET_MANAGER",
     emailVerified: true,
     status: "ACTIVE",
@@ -36,7 +36,7 @@ const users = [
 
   {
     name: "Department Head",
-    email: "departmenthead@test.com",
+    email: "fenilsolanki264@gmail.com",
     role: "DEPARTMENT_HEAD",
     emailVerified: true,
     status: "ACTIVE",
@@ -55,7 +55,7 @@ const createRoles = async () => {
 
         {
           upsert: true,
-          new: true,
+          returnDocument: "after",
         },
       );
 

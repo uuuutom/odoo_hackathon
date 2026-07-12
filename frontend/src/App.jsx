@@ -11,6 +11,9 @@ import Signin from "./pages/Signin.jsx";
 import VerifyOTP from "./pages/VerifyOTP.jsx";
 import ForgotPassword from "./pages/ForgetPassword.jsx";
 import CreateNewPassword from "./pages/CreateNewPaaword.jsx";
+import OwnerDashboard from "./pages/ownerDashboard.jsx";
+import DepartmentHeadDashboard from "./pages/DeparmentHeadDashboard.jsx";
+import AssetManagerDashboard from "./pages/assetManagerDashboard.jsx";
 
 export const ServerUrl = "http://localhost:3088";
 
@@ -112,20 +115,20 @@ function App() {
 
       <Route path="/dashboard" element={<Dashboard />} />
 
-      {/* Admin */}
-      {/* <Route
-        path="/owner-dashboard"
-        element={
-          userData?.role === "admin" ? (
-            <OwnerDashboard />
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      /> */}
+      <Route path="/owner-dashboard" element={<OwnerDashboard />} />
+
+      <Route
+        path="/deparment-head-dashboard"
+        element={<DepartmentHeadDashboard />}
+      />
+
+      <Route
+        path="/asset-manager-dashboard"
+        element={<AssetManagerDashboard />}
+      />
 
       {/* 404 */}
-      {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
