@@ -1,6 +1,6 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { getProfile } from "../services/profileAPI.js";
+import { getAssetsManagerDashboard } from "../api/assetManagerDashboardAPI.js";
 import {
   PieChart,
   Pie,

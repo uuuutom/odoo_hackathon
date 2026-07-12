@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { getAssetsManagerDashboard } from "../api/assetManagerDashboardAPI";
 import {
   PieChart,
   Pie,
@@ -37,71 +38,50 @@ import {
   Monitor,
 } from "lucide-react";
 
-// --- Dummy Data ---
-const statusData = [
-  { name: "Available", value: 406, color: "#22c55e" }, // Green
-  { name: "Allocated", value: 842, color: "#6366f1" }, // Indigo
-  { name: "Maintenance", value: 45, color: "#eab308" }, // Yellow
-  { name: "Lost/Disposed", value: 12, color: "#ef4444" }, // Red
-];
-
-const trendData = [
-  { name: "Jan", Allocated: 110, Returned: 70 },
-  { name: "Feb", Allocated: 190, Returned: 130 },
-  { name: "Mar", Allocated: 135, Returned: 95 },
-  { name: "Apr", Allocated: 175, Returned: 140 },
-  { name: "May", Allocated: 155, Returned: 100 },
-  { name: "Jun", Allocated: 240, Returned: 190 },
-];
-
-const categoryData = [
-  { name: "Laptop", value: 35, color: "#3b82f6" }, // Blue
-  { name: "Furniture", value: 25, color: "#38bdf8" }, // Light Blue
-  { name: "Vehicle", value: 15, color: "#fbbf24" }, // Yellow
-  { name: "Electronics", value: 15, color: "#f97316" }, // Orange
-  { name: "Others", value: 10, color: "#8b5cf6" }, // Purple
-];
-
-const maintenanceData = [
-  { name: "Pending", count: 20, color: "#ef4444" }, // Red
-  { name: "In Progress", count: 15, color: "#f59e0b" }, // Orange/Yellow
-  { name: "Resolved", count: 10, color: "#22c55e" }, // Green
-];
-
-// --- Animation Variants ---
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-};
-
-const cardHoverProps = {
-  whileHover: {
-    scale: 1.02,
-    boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.08)",
-    transition: { type: "spring", stiffness: 300, damping: 20 },
-  },
-};
-
 export default function AssetManagerDashboard() {
-  const [profile, setProfile] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const res = await getProfile();
+  const statusData =
+    dashboardData?.statusData?.map((item) => ({
+      name: item._id,
+      value: item.value,
+    })) || [];
 
-      setProfile(res.data);
-    };
+  const trendData = dashboardData?.trendData || [];
 
-    fetchProfile();
-  }, []);
+  const categoryData =
+    dashboardData?.categoryData?.map((item) => ({
+      name: item._id,
+      value: item.value,
+    })) || [];
+
+  const maintenanceData =
+    dashboardData?.maintenanceData?.map((item) => ({
+      name: item._id,
+      count: item.count,
+    })) || [];
+
+  // --- Animation Variants ---
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  };
+
+  const cardHoverProps = {
+    whileHover: {
+      scale: 1.02,
+      boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.08)",
+      transition: { type: "spring", stiffness: 300, damping: 20 },
+    },
+  };
 
   const getzletters = (name) => {
     if (!name) return "U";
@@ -113,6 +93,22 @@ export default function AssetManagerDashboard() {
       .slice(0, 2);
   };
 
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const res = await getAssetsManagerDashboard();
+
+        setDashboardData(res.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchDashboard();
+  }, []);
+
+  const upcomingReturns = dashboardData?.upcomingReturns || [];
+  const recentRequests = dashboardData?.recentRequests || [];
   return (
     <div className="flex h-screen bg-[#f8fafc] text-slate-800 font-sans">
       {/* SIDEBAR */}
@@ -236,47 +232,85 @@ export default function AssetManagerDashboard() {
             {[
               {
                 title: "Total Assets",
-                value: "1,248",
+                value: dashboardData?.totalAssets || 0,
                 stat: "+12.5% this month",
                 statColor: "text-emerald-500",
                 icon: Box,
                 iconBg: "bg-emerald-50 text-emerald-500",
               },
+
               {
                 title: "Allocated",
-                value: "842",
-                stat: "67.6%",
+                value:
+                  dashboardData?.statusData?.find(
+                    (item) => item._id === "Allocated",
+                  )?.value || 0,
+                stat: dashboardData?.totalAssets
+                  ? `${(
+                      (dashboardData.statusData.find(
+                        (item) => item._id === "Allocated",
+                      )?.value /
+                        dashboardData.totalAssets) *
+                      100
+                    ).toFixed(1)}%`
+                  : "0%",
                 statColor: "text-slate-400",
                 icon: Users,
                 iconBg: "bg-emerald-50 text-emerald-500",
               },
+
               {
                 title: "Available",
-                value: "406",
-                stat: "32.4%",
+                value:
+                  dashboardData?.statusData?.find(
+                    (item) => item._id === "Available",
+                  )?.value || 0,
+                stat: dashboardData?.totalAssets
+                  ? `${(
+                      (dashboardData.statusData.find(
+                        (item) => item._id === "Available",
+                      )?.value /
+                        dashboardData.totalAssets) *
+                      100
+                    ).toFixed(1)}%`
+                  : "0%",
                 statColor: "text-slate-400",
                 icon: CheckCircle,
                 iconBg: "bg-emerald-50 text-emerald-500",
               },
+
               {
                 title: "Maintenance",
-                value: "45",
-                stat: "3.6%",
+                value:
+                  dashboardData?.statusData?.find(
+                    (item) => item._id === "Maintenance",
+                  )?.value || 0,
+                stat: dashboardData?.totalAssets
+                  ? `${(
+                      (dashboardData.statusData.find(
+                        (item) => item._id === "Maintenance",
+                      )?.value /
+                        dashboardData.totalAssets) *
+                      100
+                    ).toFixed(1)}%`
+                  : "0%",
                 statColor: "text-slate-400",
                 icon: Wrench,
                 iconBg: "bg-red-50 text-red-500",
               },
+
               {
                 title: "Overdue Assets",
-                value: "12",
+                value: dashboardData?.overdueAssets || 0,
                 stat: "1.0%",
                 statColor: "text-slate-400",
                 icon: AlertCircle,
                 iconBg: "bg-red-50 text-red-500",
               },
+
               {
                 title: "Pending Requests",
-                value: "8",
+                value: dashboardData?.pendingRequests || 0,
                 stat: "+2 new",
                 statColor: "text-emerald-500",
                 icon: ClipboardList,
@@ -520,47 +554,51 @@ export default function AssetManagerDashboard() {
                 Recent Requests
               </h3>
               <div className="flex-1 space-y-4">
-                {[
-                  {
-                    title: "Transfer request for Laptop AF-1023",
-                    user: "Rahul Singh",
-                    status: "Pending",
-                    icon: RefreshCcw,
-                    iconColor: "text-red-500 bg-red-50",
-                  },
-                  {
-                    title: "Maintenance request for AC-12",
-                    user: "Priya Sharma",
-                    status: "Pending",
-                    icon: Wrench,
-                    iconColor: "text-red-500 bg-red-50",
-                  },
-                  {
-                    title: "Return request for Tablet TB-09",
-                    user: "Vikram Patel",
-                    status: "Pending",
-                    icon: ArrowRightLeft,
-                    iconColor: "text-red-500 bg-red-50",
-                  },
-                ].map((req, i) => (
+                {recentRequests.map((req, i) => (
                   <div
-                    key={i}
+                    key={req._id || i}
                     className="flex items-center justify-between group cursor-pointer border-b border-slate-50 pb-3 last:border-0"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${req.iconColor}`}>
-                        <req.icon size={14} />
+                      <div
+                        className={`p-2 rounded-lg ${
+                          req.requestType === "Maintenance"
+                            ? "text-red-500 bg-red-50"
+                            : req.requestType === "Return"
+                              ? "text-blue-500 bg-blue-50"
+                              : "text-emerald-500 bg-emerald-50"
+                        }`}
+                      >
+                        {req.requestType === "Maintenance" ? (
+                          <Wrench size={14} />
+                        ) : req.requestType === "Return" ? (
+                          <ArrowRightLeft size={14} />
+                        ) : (
+                          <RefreshCcw size={14} />
+                        )}
                       </div>
+
                       <div>
                         <p className="text-[12px] font-semibold text-slate-700 group-hover:text-emerald-600 transition-colors line-clamp-1">
-                          {req.title}
+                          {req.requestType} request for{" "}
+                          {req.asset?.assetName || "Asset"}
                         </p>
+
                         <p className="text-[10px] text-slate-500 mt-0.5">
-                          {req.user}
+                          {req.requestedBy?.name || "User"}
                         </p>
                       </div>
                     </div>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded text-orange-600 bg-orange-50 whitespace-nowrap ml-2">
+
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded whitespace-nowrap ml-2 ${
+                        req.status === "Pending"
+                          ? "text-orange-600 bg-orange-50"
+                          : req.status === "Approved"
+                            ? "text-emerald-600 bg-emerald-50"
+                            : "text-red-600 bg-red-50"
+                      }`}
+                    >
                       {req.status}
                     </span>
                   </div>
@@ -581,51 +619,36 @@ export default function AssetManagerDashboard() {
                 Upcoming Returns
               </h3>
               <div className="flex-1 space-y-4">
-                {[
-                  {
-                    date: "24",
-                    month: "May",
-                    title: "Laptop AF-1012",
-                    user: "Rahul Singh",
-                    iconBg: "bg-red-50 text-red-500",
-                  },
-                  {
-                    date: "25",
-                    month: "May",
-                    title: "Projector PR-11",
-                    user: "Ankit Verma",
-                    iconBg: "bg-emerald-50 text-emerald-500",
-                  },
-                  {
-                    date: "28",
-                    month: "May",
-                    title: "Camera CM-07",
-                    user: "Neha Gupta",
-                    iconBg: "bg-emerald-50 text-emerald-500",
-                  },
-                ].map((ret, i) => (
+                {upcomingReturns.map((ret, i) => (
                   <div
-                    key={i}
+                    key={ret._id || i}
                     className="flex items-center space-x-4 group cursor-pointer border-b border-slate-50 pb-3 last:border-0"
                   >
                     <div className="text-center min-w-[35px]">
                       <p className="text-sm font-bold text-slate-800">
-                        {ret.date}
+                        {new Date(ret.returnDate).getDate()}
                       </p>
+
                       <p className="text-[10px] font-medium text-slate-500">
-                        {ret.month}
+                        {new Date(ret.returnDate).toLocaleString("en-US", {
+                          month: "short",
+                        })}
                       </p>
                     </div>
+
                     <div className="w-[1.5px] h-8 bg-slate-200"></div>
+
                     <div className="flex-1">
-                      <p className="text-[12px] font-semibold text-slate-700 group-hover:text-emerald-600 transition-colors">
-                        {ret.title}
+                      <p className="text-[12px] font-semibold text-slate-700 group-hover:text-emerald-600">
+                        {ret.asset?.assetName}
                       </p>
+
                       <p className="text-[10px] text-slate-500 mt-0.5">
-                        {ret.user}
+                        {ret.employee?.name}
                       </p>
                     </div>
-                    <div className={`p-1.5 rounded-full ${ret.iconBg}`}>
+
+                    <div className="p-1.5 rounded-full bg-emerald-50 text-emerald-500">
                       <Monitor size={12} />
                     </div>
                   </div>
